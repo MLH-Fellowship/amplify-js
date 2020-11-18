@@ -192,42 +192,46 @@ class SyncProcessor {
 						parentPromises.get(`${namespace}_${parent}`)
 					);
 
-					const promise = new Promise<void>(async res => {
+					const promise = new Promise<void>(async (res, rej) => {
 						await Promise.all(promises);
 
-						do {
-							if (!processing) {
-								return;
-							}
+						try {
+							do {
+								if (!processing) {
+									return;
+								}
 
-							const limit = Math.min(
-								maxRecordsToSync - recordsReceived,
-								syncPageSize
-							);
+								const limit = Math.min(
+									maxRecordsToSync - recordsReceived,
+									syncPageSize
+								);
 
-							({ items, nextToken, startedAt } = await this.retrievePage(
-								modelDefinition,
-								lastSync,
-								nextToken,
-								limit,
-								filter
-							));
+								({ items, nextToken, startedAt } = await this.retrievePage(
+									modelDefinition,
+									lastSync,
+									nextToken,
+									limit,
+									filter
+								));
 
-							recordsReceived += items.length;
+								recordsReceived += items.length;
 
-							done = nextToken === null || recordsReceived >= maxRecordsToSync;
+								done = nextToken === null || recordsReceived >= maxRecordsToSync;
 
-							observer.next({
-								namespace,
-								modelDefinition,
-								items,
-								done,
-								startedAt,
-								isFullSync: !lastSync,
-							});
-						} while (!done);
+								observer.next({
+									namespace,
+									modelDefinition,
+									items,
+									done,
+									startedAt,
+									isFullSync: !lastSync,
+								});
+							} while (!done);
 
-						res();
+							res();
+						} catch (error) {
+							rej(error);
+						}
 					});
 
 					parentPromises.set(`${namespace}_${modelDefinition.name}`, promise);
@@ -237,6 +241,8 @@ class SyncProcessor {
 
 			Promise.all(allModelsReady).then(() => {
 				observer.complete();
+			}).catch((error) => {
+				observer.error(error);
 			});
 
 			return () => {
