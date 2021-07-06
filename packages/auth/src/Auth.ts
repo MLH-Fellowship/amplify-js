@@ -1993,6 +1993,16 @@ export class AuthClass {
 			logger.debug(`Skipping URL ${URL} current flow in progress`);
 			return;
 		}
+		
+		let federatedQuery = null;
+
+		try {
+			 federatedQuery = JSON.parse(
+				this._storage.getItem('is-oauth-code')
+			);
+		} catch (error) {
+			console.log(">>>", error);
+		}
 
 		try {
 			this.oAuthFlowInProgress = true;
@@ -2022,9 +2032,7 @@ export class AuthClass {
 				.map(entry => entry.split('='))
 				.find(([k]) => k === 'access_token' || k === 'error');
 			
-			const federatedQuery = JSON.parse(
-				this._storage.getItem('is-oauth-code')
-			);
+			
 			
 			if (federatedQuery && (hasCodeOrError || hasTokenOrError)) {
 				this._storage.setItem('amplify-redirected-from-hosted-ui', 'true');
@@ -2126,7 +2134,9 @@ export class AuthClass {
 			}
 		} finally {
 			this.oAuthFlowInProgress = false;
-			this._storage.removeItem('is-oauth-code');
+			if (federatedQuery) {
+				this._storage.removeItem('is-oauth-code');
+			}
 		}
 	}
 
