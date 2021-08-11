@@ -1118,24 +1118,20 @@ export class AuthClass {
 	 **/
 	public deleteUserAttributes(
 		user: CognitoUser | any,
-		attributeNames: string[],
+		attributeNames: string[]
 	) {
 		const that = this;
 		return new Promise((resolve, reject) => {
 			that.userSession(user).then(session => {
-				user.deleteAttributes(
-					attributeNames,
-					(err, result) => {
-						if (err) {
-							return reject(err);
-						} else {
-							return resolve(result);
-						}
+				user.deleteAttributes(attributeNames, (err, result) => {
+					if (err) {
+						return reject(err);
+					} else {
+						return resolve(result);
 					}
-				);
+				});
 			});
 		});
-
 	}
 
 	/**
@@ -1819,7 +1815,7 @@ export class AuthClass {
 		code: string,
 		password: string,
 		clientMetadata: ClientMetaData = this._config.clientMetadata
-	): Promise<void> {
+	): Promise<string> {
 		if (!this.userPool) {
 			return this.rejectNoUserPool();
 		}
@@ -1839,13 +1835,13 @@ export class AuthClass {
 				code,
 				password,
 				{
-					onSuccess: () => {
+					onSuccess: message => {
 						dispatchAuthEvent(
 							'forgotPasswordSubmit',
 							user,
 							`${username} forgotPasswordSubmit successful`
 						);
-						resolve();
+						resolve(message);
 						return;
 					},
 					onFailure: err => {
@@ -2350,4 +2346,3 @@ export class AuthClass {
 export const Auth = new AuthClass(null);
 
 Amplify.register(Auth);
-
